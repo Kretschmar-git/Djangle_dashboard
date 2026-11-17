@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Indicadores</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+</head>
+<body class="dashboard-body">
+    <header class="page-header">
+        <div class="header-left">
+            <div class="brand-block brand-programa">
+                <div class="tiny-logo">◉</div>
+                <div>
+                    <div class="brand-title">PROGRAMA</div>
+                    <div class="brand-subtitle">EMPREENDER</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="brand-block brand-aciam">
+                <div class="logo-mark">A</div>
+                <div class="brand-title">ACIAM</div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="chart-icon">▐▌</div>
+            <div>
+                <h1>Painel de Indicadores</h1>
+                <p>Núcleo de Gestão de Pessoas – ACIAM</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <form method="get" class="filters">
+            <label>
+                Ano
+                <select name="year">
+                    <option value="">Todos</option>
+                    {% for year in years %}
+                        <option value="{{ year|date:'Y' }}" {% if selected_year == year|date:'Y' %}selected{% endif %}>{{ year|date:'Y' }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Mês
+                <select name="month">
+                    <option value="">Todos</option>
+                    {% for month in months %}
+                        <option value="{{ month|date:'n' }}" {% if selected_month == month|date:'n'|stringformat:'s' %}selected{% endif %}>{{ month|date:'F' }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Status
+                <select name="status">
+                    <option value="">Todos</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label class="search-field">
+                Buscar
+                <input type="text" name="search" value="{{ search_term }}" placeholder="Indicador...">
+            </label>
+
+            <label>
+                De
+                <input type="date" name="date_from" value="{{ date_from }}">
+            </label>
+
+            <label>
+                Até
+                <input type="date" name="date_to" value="{{ date_to }}">
+            </label>
+
+            <button type="submit" class="btn-primary">Filtrar</button>
+            <a href="{% url 'dashboard' %}" class="action-link secondary">Limpar</a>
+            <a href="{% url 'analytics' %}" class="action-link action-analytics">Gráficos</a>
+
+            {% if user.role == 'admin' %}
+                <a href="{% url 'admin_import' %}" class="action-link action-import">Importar planilha</a>
+            {% endif %}
+
+            <a href="{% url 'logout' %}" class="action-link danger logout-btn">Sair</a>
+        </form>
+    </div>
+
+    <div class="table-panel">
+        <table>
+            <thead>
+                <tr>
+                    <th>Indicador</th>
+                    <th>Meta / Referência inicial</th>
+                    <th>Resultado obtido</th>
+                    <th>Status da Meta</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for metric in metrics %}
+                    <tr>
+                        <td class="indicator-cell">{{ metric.title }}</td>
+                        <td class="reference-cell">{{ metric.target_text }}</td>
+                        <td class="result-cell">
+                            {% if metric.result_value == 'NA' %}
+                                <span class="value muted">NA</span>
+                            {% else %}
+                                <span class="value">{{ metric.result_value }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="status-cell">
+                            {% if metric.status == 'achieved' %}
+                                <span class="chip success">✓ Meta atendida</span>
+                            {% elif metric.status == 'exceeded' %}
+                                <span class="chip success exceeded">✓ Meta superada</span>
+                            {% elif metric.status == 'not_achieved' %}
+                                <span class="chip error">✕ Meta não atendida</span>
+                            {% elif metric.status == 'warning' %}
+                                <span class="chip warning">◔ Sem meta para o 1º ano</span>
+                            {% else %}
+                                <span class="chip neutral">◌ Não aplicável</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" class="empty-text">Nenhum indicador encontrado para os filtros selecionados.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary-grid">
+        <section class="summary-card">
+            <div class="card-header">
+                <span class="eyebrow">Empresas ativas</span>
+                <strong>{{ active_companies|length }}</strong>
+            </div>
+            <div class="tag-list">
+                {% for company in active_companies %}
+                    <span class="tag">{{ company.name }}</span>
+                {% empty %}
+                    <span class="tag muted">Nenhuma empresa ativa cadastrada.</span>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="summary-card">
+            <div class="card-header">
+                <span class="eyebrow">Participantes das reuniões</span>
+                <strong>{{ meetings|length }}</strong>
+            </div>
+            {% for meeting in meetings %}
+                <div class="meeting-block">
+                    <div class="meeting-title">{{ meeting.title }}</div>
+                    <div class="tag-list small">
+                        {% for participant in meeting.participants.all %}
+                            <span class="tag soft">{{ participant.name }}</span>
+                        {% empty %}
+                            <span class="tag muted">Sem participantes cadastrados.</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% empty %}
+                <p class="empty-text">Nenhuma reunião cadastrada.</p>
+            {% endfor %}
+        </section>
+    </div>
+</body>
+</html>

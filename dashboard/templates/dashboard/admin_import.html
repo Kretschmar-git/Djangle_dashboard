@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar Excel | Dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+</head>
+<body class="admin-body">
+    <div class="admin-panel">
+        <div class="page-topbar">
+            <h1>Importação de indicadores</h1>
+            <a href="{% url 'dashboard' %}" class="action-link">Voltar para o dashboard</a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="upload-box">
+            <p>Baixe o modelo do Excel e faça o upload com os dados do dashboard.</p>
+            <div class="actions-row">
+                <a href="{% url 'download_template' %}" class="action-link primary">Baixar modelo Excel</a>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" class="upload-form">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Importar planilha</button>
+            </form>
+        </div>
+
+        <div class="preview-box">
+            <h2>Indicadores já cadastrados</h2>
+            <ul>
+                {% for metric in metrics %}
+                    <li>{{ metric.title }} - {{ metric.result_value }}</li>
+                {% empty %}
+                    <li>Nenhum indicador cadastrado.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

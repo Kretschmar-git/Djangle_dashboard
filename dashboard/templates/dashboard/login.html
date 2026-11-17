@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+</head>
+<body class="auth-body">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <span>ACIAM</span>
+        </div>
+        <h1>Dashboard JANGLE</h1>
+        <p class="subtitle">Acesse com seu usuário e senha</p>
+
+        {% if form.errors %}
+            <div class="message error">
+                Usuário ou senha inválidos.
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <label for="id_username">Usuário</label>
+            {{ form.username }}
+            <label for="id_password">Senha</label>
+            {{ form.password }}
+            <button type="submit">Entrar</button>
+        </form>
+
+        <div class="demo-credentials">
+            <strong>Usuários de teste:</strong>
+            <p>Admin: admin / admin123</p>
+            <p>Viewer: viewer / viewer123</p>
+        </div>
+    </div>
+</body>
+</html>

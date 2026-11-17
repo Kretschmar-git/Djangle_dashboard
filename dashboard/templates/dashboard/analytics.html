@@ -1,0 +1,210 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráficos | Dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dashboard-body">
+    <header class="page-header">
+        <div class="header-left">
+            <div class="brand-block brand-programa">
+                <div class="tiny-logo">◉</div>
+                <div>
+                    <div class="brand-title">PROGRAMA</div>
+                    <div class="brand-subtitle">EMPREENDER</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="brand-block brand-aciam">
+                <div class="logo-mark">A</div>
+                <div class="brand-title">ACIAM</div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="chart-icon">▐▌</div>
+            <div>
+                <h1>Gráficos</h1>
+                <p>Núcleo de Gestão de Pessoas – ACIAM</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <form method="get" class="filters">
+            <label>
+                Ano
+                <select name="year">
+                    <option value="">Todos</option>
+                    {% for year in years %}
+                        <option value="{{ year|date:'Y' }}" {% if selected_year == year|date:'Y' %}selected{% endif %}>{{ year|date:'Y' }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Mês
+                <select name="month">
+                    <option value="">Todos</option>
+                    {% for month in months %}
+                        <option value="{{ month|date:'n' }}" {% if selected_month == month|date:'n'|stringformat:'s' %}selected{% endif %}>{{ month|date:'F' }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Status
+                <select name="status">
+                    <option value="">Todos</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label class="search-field">
+                Buscar
+                <input type="text" name="search" value="{{ search_term }}" placeholder="Indicador...">
+            </label>
+
+            <label>
+                De
+                <input type="date" name="date_from" value="{{ date_from }}">
+            </label>
+
+            <label>
+                Até
+                <input type="date" name="date_to" value="{{ date_to }}">
+            </label>
+
+            <button type="submit" class="btn-primary">Filtrar</button>
+            <a href="{% url 'analytics' %}" class="action-link secondary">Limpar</a>
+            <a href="{% url 'dashboard' %}" class="action-link action-analytics">Tabela</a>
+            {% if user.role == 'admin' %}
+                <a href="{% url 'admin_import' %}" class="action-link action-import">Importar planilha</a>
+            {% endif %}
+            <a href="{% url 'logout' %}" class="action-link danger logout-btn">Sair</a>
+        </form>
+    </div>
+
+    <div class="analytics-shell">
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="label">Meta atendida</div>
+                <div class="value">{{ achieved }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Meta superada</div>
+                <div class="value">{{ exceeded }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Meta não atendida</div>
+                <div class="value">{{ not_achieved }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Sem meta</div>
+                <div class="value">{{ warning }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Não aplicável</div>
+                <div class="value">{{ na_count }}</div>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-panel">
+                <h2>Resultados por indicador</h2>
+                <div class="chart-wrap">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-panel">
+                <h2>Distribuição por status</h2>
+                <div class="chart-wrap" style="height: 320px;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+                <ul class="chart-list">
+                    <li><span><span class="legend-dot" style="background:#1e9d6c"></span>Meta atendida</span> <strong>{{ achieved }}</strong></li>
+                    <li><span><span class="legend-dot" style="background:#3b82f6"></span>Meta superada</span> <strong>{{ exceeded }}</strong></li>
+                    <li><span><span class="legend-dot" style="background:#dc4c4c"></span>Meta não atendida</span> <strong>{{ not_achieved }}</strong></li>
+                    <li><span><span class="legend-dot" style="background:#f4a03d"></span>Sem meta</span> <strong>{{ warning }}</strong></li>
+                    <li><span><span class="legend-dot" style="background:#c7d0ca"></span>Não aplicável</span> <strong>{{ na_count }}</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chartSeries = [{% for item in chart_series %}{
+            label: "{{ item.label|escapejs }}",
+            value: {{ item.value_raw }},
+            displayValue: "{{ item.display_value|escapejs }}",
+            color: "{{ item.color }}"
+        }, {% endfor %}];
+
+        new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: chartSeries.map(item => item.label),
+                datasets: [{
+                    label: 'Resultado obtido',
+                    data: chartSeries.map(item => item.value),
+                    backgroundColor: chartSeries.map(item => item.color),
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return Number(value);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const item = chartSeries[context.dataIndex];
+                                return `${item.label}: ${item.displayValue}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Meta atendida', 'Meta superada', 'Meta não atendida', 'Sem meta', 'Não aplicável'],
+                datasets: [{
+                    data: [{{ achieved }}, {{ exceeded }}, {{ not_achieved }}, {{ warning }}, {{ na_count }}],
+                    backgroundColor: ['#1e9d6c', '#3b82f6', '#dc4c4c', '#f4a03d', '#c7d0ca'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
