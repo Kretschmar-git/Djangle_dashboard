@@ -1,1 +1,1 @@
-web: gunicorn dashboard_project.wsgi:application
+web: bash start.sh
